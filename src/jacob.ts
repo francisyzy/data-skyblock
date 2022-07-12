@@ -2,10 +2,28 @@
 import fetch from 'node-fetch';
 import { parse } from 'node-html-parser';
 // Local modules.
-import { sbGetYear } from './sbUtils';
-const sbYear = sbGetYear(new Date().getTime());
-const jacobEvent = `https://hypixel-skyblock.fandom.com/api.php?action=query&format=json&prop=revisions&titles=Jacob's_Farming_Contest/Events/Year ${sbYear}&formatversion=2&rvprop=content&rvslots=*`;
+import { extractNumbers } from './extractNumbers';
+// import { sbGetYear } from './sbUtils';
+// const sbYear = sbGetYear(new Date().getTime());
+// console.log(sbYear);
+const yearFinder =
+  'https://hypixel-skyblock.fandom.com/wiki/Jacob%27s_Farming_Contest/Events';
+async function getSbYear(): Promise<number> {
+  let currentYear = 0;
+  const res = await fetch(yearFinder);
+  const xml = await res.text();
+  const root = parse(xml);
+  const listItems = root.querySelectorAll('td.darkmsgbox-bottom');
+  listItems.forEach((item) => {
+    if (item.rawText.includes('The current SkyBlock year')) {
+      currentYear = extractNumbers(item.rawText)[0];
+    }
+  });
+  return currentYear;
+}
 const getJacobEvents = async () => {
+  const sbYear = await getSbYear();
+  const jacobEvent = `https://hypixel-skyblock.fandom.com/api.php?action=query&format=json&prop=revisions&titles=Jacob's_Farming_Contest/Events/Year ${sbYear}&formatversion=2&rvprop=content&rvslots=*`;
   const res = await fetch(jacobEvent);
   const xml = (await res.json()).query.pages[0].revisions[0].slots.main.content;
 
