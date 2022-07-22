@@ -10,9 +10,12 @@ const getFetchurQuest = async () => {
   const root = parse(xml);
   let day = root.querySelectorAll('span.plainlinks')[0].rawText;
   const box = root.querySelectorAll('span.custom-widgetbox-gold');
+  const urlParse = root.querySelector('a.mw-redirect');
+  const url =
+    'https://hypixel-skyblock.fandom.com' + urlParse.getAttribute('href');
   const item = box[0].rawText.replace(day, '');
   day = day.replace(' (refresh)', '');
-  return { day, item };
+  return { day, item, url };
 };
 
 export { getFetchurQuest };
