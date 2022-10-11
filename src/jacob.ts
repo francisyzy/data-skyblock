@@ -22,22 +22,43 @@ async function getSbYear(): Promise<number> {
   return currentYear;
 }
 const getJacobEvents = async () => {
-  const sbYear = await getSbYear();
-  const jacobEvent = `https://hypixel-skyblock.fandom.com/api.php?action=query&format=json&prop=revisions&titles=Jacob's_Farming_Contest/Events/Year ${sbYear}&formatversion=2&rvprop=content&rvslots=*`;
+  const currSbYear = await getSbYear();
+  let findTwenty = currSbYear;
+  while (findTwenty % 20 !== 0) {
+    findTwenty++;
+  }
+  const sbYear = `20${findTwenty - 19}-${findTwenty}`;
+
+  const jacobEvent = `https://hypixel-skyblock.fandom.com/api.php?action=query&format=json&prop=revisions&titles=Jacob%27s_Farming_Contest%2FEvents%2FYear%${sbYear}&formatversion=2&rvprop=content&rvslots=*`;
   const res = await fetch(jacobEvent);
   const xml = (await res.json()).query.pages[0].revisions[0].slots.main.content;
 
   const root = parse(xml);
   let list: { mcDate: String; rlDate: Date; crops: String[] }[] = [];
   root.childNodes.forEach((node) => {
-    if (node.rawText.includes('0 || {{Hl|{{ID|')) {
-      const spilt = node.rawText.split(' || ');
-      let crops = spilt[3].split('}}|{{ID|');
-      crops[0] = crops[0].substring(10);
-      crops[2] = crops[2].replace('}}}}', '');
-      const mcDate = spilt[1];
-      const rlDate = new Date(spilt[2]);
-      list.push({ mcDate, rlDate, crops });
+    if (node.rawText.includes('{| class = "wikitable"')) {
+      const lines = node.rawText.split('|-');
+      lines.forEach((line) => {
+        line.replace('\n', '');
+        if (
+          line.includes('Spring') ||
+          line.includes('Summer') ||
+          line.includes('Autumn') ||
+          line.includes('Winter')
+        ) {
+          const spilt = line.split(' || ');
+
+          let crops: String[] = [];
+          spilt.forEach((item) => {
+            if (item.includes('{{#var:')) {
+              crops.push(item.replace('{{#var:', '').replace('}}', ''));
+            }
+          });
+          const mcDate = spilt[1];
+          const rlDate = new Date(spilt[2]);
+          list.push({ mcDate, rlDate, crops });
+        }
+      });
     }
   });
   return list;
